@@ -9,6 +9,13 @@ const server = net.createServer((socket) => {
     var request = data.toString().split('\r\n');
     var headers = {};
     var response = '';
+
+    // only respond to GET command
+    if (request[0].split(' ')[0] !== 'GET') {
+        socket.end();   
+        return;
+    }
+
     //check for path
     path = request[0].split(' ')[1];
     console.log(`Path: '${path}'`);
@@ -47,7 +54,7 @@ const server = net.createServer((socket) => {
   });
   socket.on("close", () => {
     socket.end();
-    server.close();
+    //server.close();
   });
 });
 
