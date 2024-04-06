@@ -68,11 +68,11 @@ const server = net.createServer((socket) => {
         let fileExists = fs.existsSync(requestedFile);
             
         if (fileExists) {
-            let data = fs.readFileSync(requestedFile);
+            let body = fs.readFileSync(requestedFile);
             response = 'HTTP/1.1 200 OK\r\n';
-            response += 'Content-Type: application/octet-stream\r\n\r\n';
-            response += `Content-Length: ${data.length}\r\n`;
-            response += data;
+            response += 'Content-Type: application/octet-stream\r\n';
+            response += `Content-Length: ${body.length}\r\n`;
+            response += `\r\n${body}`;
         } else {
             response = 'HTTP/1.1 404 Not Found\r\n\r\n';
         }
