@@ -60,8 +60,8 @@ const server = net.createServer((socket) => {
         response += `Content-Type: text/plain\r\n`;
         response += `Content-Length: ${body.length}\r\n`;
         response += `\r\n${body}`;
-    } else if (urlpath.trim().startsWith('/file/')){
-        const requestedFile = path.join(directory, urlpath.substring('/file/'.length));
+    } else if (urlpath.trim().startsWith('/files/')){
+        const requestedFile = path.join(directory, urlpath.substring('/files/'.length));
         console.log(`requestedFile: ${requestedFile}`);
         
         // read file if exists
