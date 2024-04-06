@@ -1,24 +1,38 @@
-const net = require("net");
+const net = require('net');
+const fs = require('fs');
+const path = require('path');
+
+var directory = '';
+
+// check if --directory flag is passed
+const directoryIndex = process.argv.indexOf('--directory');
+if (directoryIndex == -1 || !process.argv[directoryIndex + 1]) {
+    directory = '.'
+} else {
+    directory =  process.argv[directoryIndex + 1];
+}
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
+console.log(`  directory: ${directory}`);
 
 // Uncomment this to pass the first stage
 const server = net.createServer((socket) => {
-  socket.on("data", (data) => {
-    var request = data.toString().split('\r\n');
+  socket.on("data", (buffer) => {
+    var request = buffer.toString().split('\r\n');
+    const [method, urlpath] = request[0].split(' ');
+
     var headers = {};
     var response = '';
 
     // only respond to GET command
-    if (request[0].split(' ')[0] !== 'GET') {
+    if (method !== 'GET') {
         socket.end();   
         return;
     }
 
     //check for path
-    path = request[0].split(' ')[1];
-    console.log(`Path: '${path}'`);
+    console.log(`Path: '${urlpath}'`);
     
     // parse headers
     for (var line of request.slice(1)) {
@@ -31,23 +45,37 @@ const server = net.createServer((socket) => {
     }
     console.log(`headers:\n${JSON.stringify(headers)}`);
 
-    if (path === '/') {
-      response  = "HTTP/1.1 200 OK\r\n\r\n";
-    } else if (path.trim().startsWith('/echo/')) {
-        var body = path.trim().substring('/echo/'.length);
+    if (urlpath === '/') {
+      response  = 'HTTP/1.1 200 OK\r\n\r\n';
+    } else if (urlpath.trim().startsWith('/echo/')) {
+        var body = urlpath.trim().substring('/echo/'.length);
         console.log(`echo: ${body}`);
-        var response = `HTTP/1.1 200 OK\r\n`;
+        response = `HTTP/1.1 200 OK\r\n`;
         response += `Content-Type: text/plain\r\n`;
         response += `Content-Length: ${body.length}\r\n`;
-        response += `\r\n${body}\r\n`;
-    } else if (path.trim().startsWith('/user-agent')){
+        response += `\r\n${body}`;
+    } else if (urlpath.trim().startsWith('/user-agent')){
         var body = headers["User-Agent"];
-        var response = `HTTP/1.1 200 OK\r\n`;
+        response = `HTTP/1.1 200 OK\r\n`;
         response += `Content-Type: text/plain\r\n`;
         response += `Content-Length: ${body.length}\r\n`;
-        response += `\r\n${body}\r\n`;
+        response += `\r\n${body}`;
+    } else if (urlpath.trim().startsWith('/file/')){
+        const requestedFile = path.join(directory, urlpath.substring('/file/'.length));
+        console.log(`requestedFile: ${requestedFile}`);
+        
+        // read file if exists
+        let fileExists = fs.existsSync(requestedFile);
+            
+        if (fileExists) {
+            response = 'HTTP/1.1 200 OK\r\n';
+            response += 'Content-Type: application/octet-stream\r\n\r\n';
+            response += fs.readFileSync(requestedFile);
+        } else {
+            response = 'HTTP/1.1 404 Not Found\r\n\r\n';
+        }
     } else {        
-      response = "HTTP/1.1 404 Not Found\r\n\r\n";
+      response = 'HTTP/1.1 404 Not Found\r\n\r\n';
     }
     socket.write(response);
     socket.end();
